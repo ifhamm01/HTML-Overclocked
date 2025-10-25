@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Showcase - Beautiful CSS Animations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- New: Include Three.js for the Shader Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --text: #f8fafc;
+            --text-muted: #cbd5e1;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- Shader Background Setup (MODIFIED) --- */
+        /* The canvas is now positioned relative to its parent container (the .hero) */
+        #canvas-container {
+            /* Now sits inside the .hero and covers its area */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place behind hero content */
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+            position: absolute; /* Canvas fills the container */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* The original animated-bg is now redundant */
+        .animated-bg {
+            display: none;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(20px);
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Styling for Lucide icon in logo */
+        .logo svg {
+            stroke: url(#logo-gradient);
+            stroke-width: 2.5; /* Slightly thicker stroke */
+            width: 28px;
+            height: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .cta-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Mobile Menu Toggle */
+        .menu-toggle {
+            display: none; /* Hidden on desktop */
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            z-index: 1100;
+            outline: none;
+        }
+
+        .menu-toggle .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: var(--text);
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Feature Card Icon Styling */
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-icon svg {
+            color: white;
+            width: 28px;
+            height: 28px;
+            stroke-width: 2.5;
+        }
+
+        /* Hero Section (MODIFIED) */
+        .hero {
+            /* min-height: 100vh; */ /* Changed to a fixed height for a clear fold */
+            height: 100vh; /* Set height to 100vh to define the background boundary */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            position: relative; /* CRITICAL: Establishes context for the absolutely positioned canvas */
+            /* Add bottom gradient fade for transition to the black background */
+            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+        }
+
+        .hero-content {
+            max-width: 900px;
+            /* Keep initial hero fade-in */
+            animation: fadeInUp 1s ease-out;
+            position: relative; /* Ensure content is above the canvas (z-index: -1) */
+            z-index: 10;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-badge {
+            display: inline-flex; /* Changed from block to flex for better icon alignment */
+            align-items: center;
+            padding: 0.5rem 1.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 50%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out 0.8s both;
+        }
+
+        .btn-primary {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+        
+        /* Style for Lucide icons within buttons */
+        .btn-primary svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 3;
+        }
+
+        .btn-secondary {
+            padding: 1rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Features Grid */
+        .features {
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            /* Used variables for consistency */
+            background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-description {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card, .showcase-card, .stat-card {
+            /* Styles for intersection observer fade-in */
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .feature-card.is-visible, .showcase-card.is-visible, .stat-card.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .feature-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Animations Showcase */
+        .showcase {
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .showcase-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .showcase-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .showcase-preview {
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            position: relative; /* Needed for absolute positioning in background demo */
+            padding: 1rem; /* Default padding for icons */
+        }
+
+        /* Override padding for the Backgrounds card to show full gradient */
+        .showcase-card:nth-child(4) .showcase-preview {
+            padding: 0; 
+        }
+
+        .showcase-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .showcase-card p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        /* Styling for Lucide icons in showcase */
+        .showcase-preview svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 2.5;
+            /* Ensure the icon's container (SVG) handles the animation */
+            transition: transform 0.3s ease; 
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cta-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 4rem 3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-content::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cta-content > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-content h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .cta-content p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex; /* For icon alignment */
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+        
+        .footer-links svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2.5;
+        }
+        
+        .footer-bottom {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        .footer-bottom svg {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            stroke: var(--accent);
+            fill: var(--accent);
+            stroke-width: 1.5;
+        }
+
+        /* Animations */
+        .pulse-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse-animation 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-animation {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        /* Demo Animations (for showcase) */
+        .demo-fade {
+            animation: demo-fade-in 2s ease-in-out infinite;
+        }
+
+        @keyframes demo-fade-in {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .demo-slide {
+            animation: demo-slide 2s ease-in-out infinite;
+        }
+
+        @keyframes demo-slide {
+            0%, 100% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+        }
+
+        .demo-rotate {
+            animation: demo-rotate 3s linear infinite;
+        }
+
+        @keyframes demo-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .demo-scale {
+            animation: demo-scale 2s ease-in-out infinite;
+        }
+
+        @keyframes demo-scale {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .demo-bounce {
+            animation: demo-bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes demo-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .demo-gradient {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
+            background-size: 400% 400%;
+            animation: demo-gradient 4s ease infinite;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-gradient svg {
+            z-index: 100;
+        }
+
+        @keyframes demo-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                /* Mobile Navigation Logic */
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                background: rgba(15, 23, 42, 0.95); /* Opaque background */
+                backdrop-filter: blur(20px);
+                z-index: 999;
+                transform: translateX(100%);
+                padding: 4rem 0;
+            }
+
+            .nav-links.active {
+                transform: translateX(0);
+            }
+            
+            .nav-links li {
+                margin: 1rem 0;
+            }
+
+            .menu-toggle {
+                display: block; /* Show on mobile */
+            }
+
+            .cta-btn {
+                display: none; /* Hide desktop CTA on mobile */
+            }
+
+            /* Hamburger X animation */
+            .menu-toggle.active .bar:nth-child(2) {
+                opacity: 0;
+            }
+            .menu-toggle.active .bar:nth-child(1) {
+                transform: translateY(8px) rotate(45deg);
+            }
+            .menu-toggle.active .bar:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+            
+            .hero {
+                padding: 6rem 1.5rem 3rem;
+            }
+
+            .features, .showcase, .stats, .cta-section {
+                padding: 4rem 1.5rem;
+            }
+
+            .features-grid, .showcase-grid, .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-content {
+                padding: 3rem 2rem;
+            }
+        }
+    </style>
+
+    <!-- Shader Code for the True Noise Grains Effect -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+        varying vec2 vUv;
+        varying vec3 vPosition;
+
+        void main() {
+            vPosition = position;
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        varying vec2 vUv;
+        varying vec3 vPosition;
+
+        uniform float uTime;
+        uniform vec3  uColor;
+        uniform float uSpeed;
+        uniform float uScale;
+        uniform float uNoiseIntensity;
+        uniform vec2  uResolution;
+        
+        // A simple, fast hash function for noise grains
+        float hash(vec2 p) {
+            p = fract(p * 0.3183099 + 0.113);
+            p *= 17.0;
+            return fract(p.x * p.y * (p.x + p.y));
+        }
+
+        void main() {
+            vec2 uv = vUv;
+            vec2 tex = (uv - 0.5) * uScale; 
+            float tOffset = uSpeed * uTime;
+
+            // Simple vertical warp
+            tex.y += 0.03 * sin(8.0 * tex.x - tOffset);
+
+            // Complex wave pattern generation (The "Silk" effect)
+            // The 0.02 * tOffset term makes the pattern move over time.
+            float pattern = 0.6 +
+                            0.4 * sin(5.0 * (tex.x + tex.y +
+                                            cos(3.0 * tex.x + 5.0 * tex.y) +
+                                            0.02 * tOffset) +
+                                    sin(20.0 * (tex.x + tex.y - 0.1 * tOffset)));
+
+            // Final color calculation using a deep purple base
+            vec3 colorBase = vec3(uColor);
+            vec3 finalColor = colorBase * pattern * 1.5; // Multiply by 1.5 for a brighter silk look
+
+            // --- True Noise Grain Implementation ---
+            // Use gl_FragCoord.xy for screen-space noise to get static grains
+            float grainNoise = hash(floor(gl_FragCoord.xy / 2.0));
+            grainNoise = mix(-1.0, 1.0, grainNoise); 
+
+            // Apply noise based on intensity
+            finalColor += grainNoise * uNoiseIntensity * 0.05; 
+            
+            // Clamp color to avoid extreme values
+            finalColor = clamp(finalColor, 0.0, 1.0);
+            
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
+    </script>
+</head>
+<body>
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:var(--primary);stop-opacity:1" />
+                <stop offset="100%" style="stop-color:var(--secondary);stop-opacity:1" />
+            </linearGradient>
+        </defs>
+    </svg>
+    
+    <!-- Original animated background elements are now redundant, but kept out of the main flow -->
+    <div class="animated-bg">
+        <div class="bg-orbs"></div>
+        <div class="particles" id="particles"></div>
+    </div>
+
+    <header>
+        <nav>
+            <div class="logo">
+                <i data-lucide="wand-sparkles" aria-hidden="true"></i>
+                <span>HTML Overclocked</span>
+            </div>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#showcase">Animations</a></li>
+                <li><a href="#stats">Stats</a></li>
+            </ul>
+            <a href="main.html" class="cta-btn">Get Started</a>
+            
+            <button class="menu-toggle" aria-label="Toggle navigation" aria-controls="nav-links" aria-expanded="false" id="menu-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <!-- CRITICAL CHANGE: Canvas container is now placed inside .hero -->
+        <div id="canvas-container"></div>
+        
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                <span style="margin-left: 0.5rem;">50+ Beautiful Animations</span>
+            </div>
+            <h1>Bring Your Website to Life</h1>
+            <p>Discover a curated collection of stunning CSS animations. Copy, customize, and implement with just a few clicks.</p>
+            <div class="hero-buttons">
+                <a href="#showcase" class="btn-primary" role="button">
+                    <span>Explore Animations</span>
+                    <i data-lucide="arrow-right" aria-hidden="true"></i>
+                </a>
+                <a href="#" class="btn-secondary">View Documentation</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="section-header">
+            <div class="section-badge">Why Choose Us</div>
+            <h2 class="section-title">Everything You Need</h2>
+            <p class="section-description">Powerful features designed to make animation implementation effortless</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="zap"></i></div>
+                <h3>Lightning Fast</h3>
+                <p>Pure CSS animations with zero JavaScript dependencies. Optimized for performance and smooth rendering.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="smartphone"></i></div>
+                <h3>Fully Responsive</h3>
+                <p>Every animation is tested across devices and browsers to ensure consistent behavior everywhere.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="settings"></i></div>
+                <h3>Customizable</h3>
+                <p>Easily modify timing, colors, and properties to match your brand and design system.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="clipboard-copy"></i></div>
+                <h3>Copy & Paste</h3>
+                <p>One-click copy feature to instantly grab the code you need. No complex setup required.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="bookmark"></i></div>
+                <h3>Save Favorites</h3>
+                <p>Bookmark your favorite animations and build your personal collection for quick access.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i data-lucide="search"></i></div>
+                <h3>Smart Search</h3>
+                <p>Find exactly what you need with intelligent search and filtering by categories and tags.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="showcase" id="showcase">
+        <div class="section-header">
+            <div class="section-badge">Preview</div>
+            <h2 class="section-title">Animation Categories</h2>
+            <p class="section-description">Explore our diverse collection of animation styles</p>
+        </div>
+        <div class="showcase-grid">
+            <div class="showcase-card">
+                <div class="showcase-preview">
+                    <i data-lucide="type" class="demo-fade"></i>
+                </div>
+                <h3>Text Animations</h3>
+                <p>Eye-catching text effects that grab attention</p>
+            </div>
+            <div class="showcase-card">
+                <div class="showcase-preview">
+                    <i data-lucide="mouse-pointer-2" class="demo-scale" style="stroke: var(--primary);"></i>
+                </div>
+                <h3>Hover Effects</h3>
+                <p>Interactive elements that respond to user input</p>
+            </div>
+            <div class="showcase-card">
+                <div class="showcase-preview">
+                    <i data-lucide="square" class="demo-bounce" style="stroke: var(--accent);"></i>
+                </div>
+                <h3>Button Animations</h3>
+                <p>Make your CTAs impossible to ignore</p>
+            </div>
+            <div class="showcase-card">
+                <div class="showcase-preview">
+                    <div class="demo-gradient">
+                        <i data-lucide="image" style="stroke: white;"></i>
+                    </div>
+                </div>
+                <h3>Backgrounds</h3>
+                <p>Dynamic patterns that add depth and interest</p>
+            </div>
+            <div class="showcase-card">
+                <div class="showcase-preview">
+                    <i data-lucide="loader" class="demo-rotate" style="stroke: var(--primary);"></i>
+                </div>
+                <h3>Loading States</h3>
+                <p>Keep users engaged during wait times</p>
+            </div>
+            <div class="showcase-card">
+                <div class="showcase-preview">
+                    <i data-lucide="arrow-right-left" class="demo-slide" style="stroke: var(--secondary);"></i>
+                </div>
+                <h3>Transitions</h3>
+                <p>Smooth state changes and page transitions</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats" id="stats">
+        <div class="section-header">
+            <div class="section-badge">By The Numbers</div>
+            <h2 class="section-title">Trusted by Developers</h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Animations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Customizable</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Dependencies</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Ready to Animate?</h2>
+            <p>Start creating beautiful, engaging websites with our collection of handcrafted CSS animations.</p>
+            <a href="#showcase" class="btn-primary" style="font-size: 1.125rem; padding: 1.25rem 2.5rem;">
+                <span>Start Exploring</span>
+                <i data-lucide="arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#"><i data-lucide="book-open" aria-hidden="true"></i> Documentation</a>
+                <a href="#"><i data-lucide="github" aria-hidden="true"></i> GitHub</a>
+                <a href="#"><i data-lucide="twitter" aria-hidden="true"></i> Twitter</a>
+                <a href="#"><i data-lucide="discord" aria-hidden="true"></i> Discord</a>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 AnimateHub. Crafted with <i data-lucide="heart" aria-hidden="true"></i> for developers.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- Three.js Shader Setup and Animation Logic ---
+        const container = document.getElementById('canvas-container');
+        let scene, camera, renderer, planeMesh, uniforms, clock;
+        
+        // Configuration object for the shader
+        const config = {
+            speed: 0.5, // Controls how fast the silk pattern moves over time
+            scale: 1.5,  // Controls the density of the pattern
+            color: '#6366F1', // Primary color for the silk (Tailwind Indigo-500 equivalent)
+            noiseIntensity: 1.5, // Grain intensity
+            rotation: 0.0,
+            planeDistance: 5,
+        };
+        
+        const hexToNormalizedRGB = hex => {
+            hex = hex.replace('#', '');
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            return [
+                parseInt(hex.slice(0, 2), 16) / 255,
+                parseInt(hex.slice(2, 4), 16) / 255,
+                parseInt(hex.slice(4, 6), 16) / 255
+            ];
+        };
+
+        function getScreenSize(camera, distance, containerElement) {
+            // Use container's aspect ratio instead of window's
+            const containerWidth = containerElement.clientWidth;
+            const containerHeight = containerElement.clientHeight;
+            const aspectRatio = containerWidth / containerHeight;
+            
+            const fovY = camera.fov * (Math.PI / 180);
+            const height = 2 * Math.tan(fovY / 2) * distance;
+            const width = height * aspectRatio;
+            return { width, height, containerWidth, containerHeight };
+        }
+
+        function initShader() {
+            // 1. Scene
+            scene = new THREE.Scene();
+
+            // 2. Camera (Perspective)
+            // Use container's aspect ratio for camera
+            const aspectRatio = container.clientWidth / container.clientHeight;
+            camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
+            camera.position.z = config.planeDistance;
+            
+            // 3. Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Set size based on the container (which is the .hero section)
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.domElement.id = 'waveCanvas'; 
+            container.appendChild(renderer.domElement);
+
+            // 4. Clock
+            clock = new THREE.Clock();
+
+            // 5. Uniforms
+            uniforms = {
+                uTime: { value: 0.0 },
+                uSpeed: { value: config.speed },
+                uScale: { value: config.scale },
+                uNoiseIntensity: { value: config.noiseIntensity },
+                uColor: { value: new THREE.Color(...hexToNormalizedRGB(config.color)) },
+                // Resolution needs to be the canvas/container size, not the whole window
+                uResolution: { value: new THREE.Vector2(container.clientWidth, container.clientHeight) } 
+            };
+
+            // 6. Mesh
+            const vertexShader = document.getElementById('vertexShader').textContent;
+            const fragmentShader = document.getElementById('fragmentShader').textContent;
+
+            const geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+            const material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+            });
+
+            planeMesh = new THREE.Mesh(geometry, material);
+            
+            // Scale the plane to cover the screen
+            resizePlane();
+            scene.add(planeMesh);
+
+            // 7. Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            
+            // 8. Start the render loop
+            animateShader();
+        }
+
+        function resizePlane() {
+            if (!camera || !planeMesh || !container) return;
+
+            // Recalculate size based on the container element's dimensions
+            const { width, height, containerWidth, containerHeight } = getScreenSize(camera, config.planeDistance, container);
+
+            // Update renderer size and camera aspect
+            camera.aspect = containerWidth / containerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(containerWidth, containerHeight);
+
+            // Update mesh scale
+            planeMesh.scale.set(width, height, 1);
+        }
+
+        function onWindowResize() {
+            // The resize logic is now handled in resizePlane which queries the container size
+            if (container) {
+                // Update resolution uniform
+                if (uniforms && uniforms.uResolution) {
+                    uniforms.uResolution.value.set(container.clientWidth, container.clientHeight);
+                }
+                resizePlane();
+            }
+        }
+
+        function animateShader() {
+            requestAnimationFrame(animateShader);
+
+            const delta = clock.getDelta();
+            if (uniforms && uniforms.uTime) {
+                // The motion is controlled by the uniform update here and the fragment shader's logic
+                uniforms.uTime.value += config.speed * delta; 
+            }
+
+            renderer.render(scene, camera);
+        }
+
+
+        // --- Original Site JavaScript (Lucide, Scroll, Observer, Menu) ---
+        
+        window.addEventListener('load', () => {
+            // Initialize Three.js Shader
+            initShader(); 
+            
+            // Initialize Lucide icons
+            lucide.createIcons(); 
+        });
+
+        // --- 4. Smooth Scroll ---
+        const navLinks = document.getElementById('nav-links'); 
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    if (navLinks && navLinks.classList.contains('active')) {
+                        toggleMenu();
+                    }
+                }
+            });
+        });
+
+        // --- 5. Intersection Observer ---
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .showcase-card, .stat-card').forEach(el => {
+            observer.observe(el);
+        });
+        
+        // --- 6. Mobile Menu Toggle Logic ---
+        const menuToggle = document.getElementById('menu-toggle');
+        
+        function toggleMenu() {
+            const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true' || false;
+            menuToggle.setAttribute('aria-expanded', !isExpanded);
+            menuToggle.classList.toggle('active');
+            navLinks.classList.toggle('active');
+            document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+    </script>
+</body>
+</html>
