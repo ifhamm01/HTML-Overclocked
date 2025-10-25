@@ -83,26 +83,15 @@
             align-items: center;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Styling for Lucide icon in logo */
-        .logo svg {
-            stroke: url(#logo-gradient);
-            stroke-width: 2.5; /* Slightly thicker stroke */
-            width: 28px;
-            height: 28px;
-        }
-
+ 
+	
+		.logo svg, .logo img {
+            scale: 200%;
+			width: 100px;
+			height: 40px;
+			flex-shrink: 0; /* Prevents logo from growing when space is available */
+		}
+		
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -880,8 +869,18 @@
     <header>
         <nav>
             <div class="logo">
-                <i data-lucide="wand-sparkles" aria-hidden="true"></i>
-                <span>HTML Overclocked</span>
+               <a href="index.html" class="logo">
+				<!-- 
+					TO INSERT YOUR CUSTOM LOGO: 
+					1. DELETE the line below (the Lucide icon).
+					2. UNCOMMENT the line below it and replace 'path/to/your/logo.png' 
+					   with the actual URL or path to your image file.
+				-->
+				
+				<!-- <img src="path/to/your/logo.png" alt="AnimateHub Logo"> -->
+				<!-- Simple span structure with the new class for the designed font -->
+				<img src="logo.png" alt="AnimateHub Logo">
+			</a>
             </div>
             <ul class="nav-links" id="nav-links">
                 <li><a href="#features">Features</a></li>
